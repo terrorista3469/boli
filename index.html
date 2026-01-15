@@ -543,7 +543,7 @@
             
             container.innerHTML += `
                 <div class="project-card">
-                    <button class="view-btn" onclick="viewProject(${mIdx}, ${pIdx})">👁️ Ver</button>
+                    <button class="view-btn" onclick="viewProject(${mIdx}, ${pIdx})">📈Estadisticas</button>
                     <button class="delete-btn" onclick="deleteProject(${mIdx}, ${pIdx})">×</button>
                     <div class="input-group">
                         <label>Proyecto</label>
@@ -563,7 +563,7 @@
                         <div class="budget-title">📋 MATERIALES</div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px">
                             <div class="input-group">
-                                <label>Presupuestado</label>
+                                <label>🎯Presupuestado</label>
                                 <input type="number" step="100000" value="${p.matBudget || 0}" onchange="upd(${mIdx}, ${pIdx}, 'matBudget', this.value)">
                             </div>
                             <div class="input-group">
@@ -576,7 +576,7 @@
                         <div class="budget-title">👷 MANO DE OBRA</div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px">
                             <div class="input-group">
-                                <label>Presupuestado</label>
+                                <label>🎯Presupuestado</label>
                                 <input type="number" step="100000" value="${p.manBudget || 0}" onchange="upd(${mIdx}, ${pIdx}, 'manBudget', this.value)">
                             </div>
                             <div class="input-group">
@@ -589,7 +589,7 @@
                         <div class="budget-title">🎨 DISEÑO</div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px">
                             <div class="input-group">
-                                <label>Presupuestado</label>
+                                <label>🎯Presupuestado</label>
                                 <input type="number" step="100000" value="${p.disBudget || 0}" onchange="upd(${mIdx}, ${pIdx}, 'disBudget', this.value)">
                             </div>
                             <div class="input-group">
