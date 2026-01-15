@@ -285,6 +285,15 @@
                 <h3 id="total-man-real">$ 0</h3>
                 <div class="trend" id="man-variance">0%</div>
             </div>
+            <div class="stat-card">
+                <span>📋 Diseño Presupuestado</span>
+                <h3 id="total-dis-budget">$ 0</h3>
+            </div>
+            <div class="stat-card">
+                <span>💵 Diseño Real</span>
+                <h3 id="total-dis-real">$ 0</h3>
+                <div class="trend" id="dis-variance">0%</div>
+            </div>
         </div>
 
         <div class="charts-row">
@@ -299,9 +308,14 @@
         </div>
         
         <div class="chart-box">
+            <h4>🎨 Diseño: Presupuesto vs Real</h4>
+            <canvas id="disBudgetChart" style="max-height: 350px"></canvas>
+        </div>
+        
+        <div class="chart-box">
             <h4>📋 Detalle de Desviaciones</h4>
             <table class="project-table">
-                <thead><tr><th>Proyecto</th><th>Mat.Pres</th><th>Mat.Real</th><th>Desv.Mat</th><th>MO Pres</th><th>MO Real</th><th>Desv.MO</th></tr></thead>
+                <thead><tr><th>Proyecto</th><th>Mat.Pres</th><th>Mat.Real</th><th>Desv.Mat</th><th>MO Pres</th><th>MO Real</th><th>Desv.MO</th><th>Dis.Pres</th><th>Dis.Real</th><th>Desv.Dis</th></tr></thead>
                 <tbody id="budgetTable"></tbody>
             </table>
         </div>
@@ -389,6 +403,8 @@
             matReal: 38000000, 
             manBudget: 35000000, 
             manReal: 37000000,
+            disBudget: 15000000,
+            disReal: 14000000,
             targetMarginPct: 35 
         }],
         1: [{ 
@@ -398,6 +414,8 @@
             matReal: 115000000, 
             manBudget: 80000000, 
             manReal: 85000000,
+            disBudget: 30000000,
+            disReal: 32000000,
             targetMarginPct: 40 
         }]
     };
@@ -466,6 +484,18 @@
             options: { ...opts, scales: { y: { beginAtZero: true } } }
         });
         
+        charts.disBudget = new Chart(document.getElementById('disBudgetChart'), {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Presupuestado', backgroundColor: '#1976D2', data: [] },
+                    { label: 'Real', backgroundColor: '#D32F2F', data: [] }
+                ]
+            },
+            options: { ...opts, scales: { y: { beginAtZero: true } } }
+        });
+        
         charts.trend = new Chart(document.getElementById('trendChart'), {
             type: 'line',
             data: {
@@ -507,7 +537,7 @@
         if (!dataStore[mIdx]) dataStore[mIdx] = [];
         
         dataStore[mIdx].forEach((p, pIdx) => {
-            const costReal = (p.matReal || 0) + (p.manReal || 0);
+            const costReal = (p.matReal || 0) + (p.manReal || 0) + (p.disReal || 0);
             const util = p.ing - costReal;
             const margin = p.ing > 0 ? ((util / p.ing) * 100) : 0;
             
@@ -555,6 +585,19 @@
                             </div>
                         </div>
                     </div>
+                    <div class="budget-section">
+                        <div class="budget-title">🎨 DISEÑO</div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px">
+                            <div class="input-group">
+                                <label>Presupuestado</label>
+                                <input type="number" step="100000" value="${p.disBudget || 0}" onchange="upd(${mIdx}, ${pIdx}, 'disBudget', this.value)">
+                            </div>
+                            <div class="input-group">
+                                <label>Real</label>
+                                <input type="number" step="100000" value="${p.disReal || 0}" onchange="upd(${mIdx}, ${pIdx}, 'disReal', this.value)">
+                            </div>
+                        </div>
+                    </div>
                     <div style="margin-top: 10px; padding: 10px; background: #2A2A2A; border-radius: 6px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                             <span style="font-size:0.65rem; color:#888;">UTILIDAD:</span>
@@ -588,7 +631,7 @@
         if(!dataStore[mIdx]) dataStore[mIdx] = [];
         dataStore[mIdx].push({ 
             name: "Nuevo Proyecto", ing: 0, matBudget: 0, matReal: 0, 
-            manBudget: 0, manReal: 0, targetMarginPct: 35 
+            manBudget: 0, manReal: 0, disBudget: 0, disReal: 0, targetMarginPct: 35 
         });
         save();
         renderView();
@@ -597,18 +640,20 @@
 
     function viewProject(mIdx, pIdx) {
         const p = dataStore[mIdx][pIdx];
-        const costBudget = (p.matBudget || 0) + (p.manBudget || 0);
-        const costReal = (p.matReal || 0) + (p.manReal || 0);
+        const costBudget = (p.matBudget || 0) + (p.manBudget || 0) + (p.disBudget || 0);
+        const costReal = (p.matReal || 0) + (p.manReal || 0) + (p.disReal || 0);
         const util = p.ing - costReal;
         const margin = p.ing > 0 ? ((util / p.ing) * 100) : 0;
         const target = p.targetMarginPct || 0;
         
         const matDev = (p.matReal || 0) - (p.matBudget || 0);
         const manDev = (p.manReal || 0) - (p.manBudget || 0);
+        const disDev = (p.disReal || 0) - (p.disBudget || 0);
         const totalDev = costReal - costBudget;
         
         const matDevPct = p.matBudget > 0 ? ((matDev / p.matBudget) * 100) : 0;
         const manDevPct = p.manBudget > 0 ? ((manDev / p.manBudget) * 100) : 0;
+        const disDevPct = p.disBudget > 0 ? ((disDev / p.disBudget) * 100) : 0;
         
         document.getElementById('modalTitle').innerText = p.name;
         document.getElementById('modalSubtitle').innerText = meses[mIdx] + ' 2026';
@@ -670,6 +715,16 @@
             </div>
             
             <div class="chart-box">
+                <h4>🎨 Presupuesto vs Real: Diseño</h4>
+                <canvas id="modalDisChart" style="max-height: 300px"></canvas>
+                <div style="margin-top:15px; text-align:center;">
+                    <span class="metric-mini">Desviación: <strong style="color:${disDev <= 0 ? 'var(--green)' : 'var(--accent-red)'}">
+                        ${disDev >= 0 ? '+' : ''}${fmt.format(disDev)} (${disDevPct.toFixed(1)}%)
+                    </strong></span>
+                </div>
+            </div>
+            
+            <div class="chart-box">
                 <h4>📈 Análisis Comparativo Completo</h4>
                 <canvas id="modalCompChart" style="max-height: 300px"></canvas>
             </div>
@@ -693,6 +748,15 @@
                     <span>💵 MO Real</span>
                     <h3>${fmt.format(p.manReal || 0)}</h3>
                     <div class="trend ${manDev <= 0 ? 'up' : 'down'}">${manDev >= 0 ? '+' : ''}${fmt.format(manDev)}</div>
+                </div>
+                <div class="stat-card">
+                    <span>📋 Diseño Presup.</span>
+                    <h3>${fmt.format(p.disBudget || 0)}</h3>
+                </div>
+                <div class="stat-card">
+                    <span>💵 Diseño Real</span>
+                    <h3>${fmt.format(p.disReal || 0)}</h3>
+                    <div class="trend ${disDev <= 0 ? 'up' : 'down'}">${disDev >= 0 ? '+' : ''}${fmt.format(disDev)}</div>
                 </div>
             </div>
             
@@ -721,7 +785,7 @@
                         <div style="padding:15px; background:#FFF3E0; border-left:4px solid #F57C00; border-radius:6px; margin-top:15px;">
                             <strong style="color:#F57C00;">⚠️ Atención:</strong>
                             <p style="margin:5px 0 0 0; font-size:0.85rem;">
-                                Sobrecosto de ${fmt.format(totalDev)}. El mayor impacto está en ${Math.abs(matDev) > Math.abs(manDev) ? 'materiales (+' + matDevPct.toFixed(1) + '%)' : 'mano de obra (+' + manDevPct.toFixed(1) + '%)'}.
+                                Sobrecosto de ${fmt.format(totalDev)}. Mayor impacto en ${Math.abs(matDev) > Math.abs(manDev) && Math.abs(matDev) > Math.abs(disDev) ? 'materiales (+' + matDevPct.toFixed(1) + '%)' : Math.abs(manDev) > Math.abs(disDev) ? 'mano de obra (+' + manDevPct.toFixed(1) + '%)' : 'diseño (+' + disDevPct.toFixed(1) + '%)'}.
                             </p>
                         </div>
                     ` : `
@@ -730,7 +794,8 @@
                             <p style="margin:5px 0 0 0; font-size:0.85rem;">
                                 Proyecto ejecutado ${totalDev === 0 ? 'exactamente dentro' : 'por debajo'} del presupuesto con ahorro de ${fmt.format(Math.abs(totalDev))}.
                                 ${matDev < 0 ? 'Ahorro en materiales: ' + fmt.format(Math.abs(matDev)) + '. ' : ''}
-                                ${manDev < 0 ? 'Ahorro en mano de obra: ' + fmt.format(Math.abs(manDev)) + '.' : ''}
+                                ${manDev < 0 ? 'Ahorro en mano de obra: ' + fmt.format(Math.abs(manDev)) + '. ' : ''}
+                                ${disDev < 0 ? 'Ahorro en diseño: ' + fmt.format(Math.abs(disDev)) + '.' : ''}
                             </p>
                         </div>
                     `}
@@ -744,10 +809,10 @@
             new Chart(document.getElementById('modalPieChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Utilidad', 'Materiales', 'Mano de Obra'],
+                    labels: ['Utilidad', 'Materiales', 'Mano de Obra', 'Diseño'],
                     datasets: [{
-                        data: [util, p.matReal || 0, p.manReal || 0],
-                        backgroundColor: ['#D4AF37', '#B71C1C', '#D32F2F']
+                        data: [util, p.matReal || 0, p.manReal || 0, p.disReal || 0],
+                        backgroundColor: ['#D4AF37', '#B71C1C', '#D32F2F', '#9C27B0']
                     }]
                 },
                 options: {
@@ -885,20 +950,57 @@
                 }
             });
             
+            // Gráfica de diseño
+            new Chart(document.getElementById('modalDisChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Presupuestado', 'Real'],
+                    datasets: [{
+                        label: 'Diseño',
+                        data: [p.disBudget || 0, p.disReal || 0],
+                        backgroundColor: ['#1976D2', disDev <= 0 ? '#1D6F42' : '#D32F2F']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return fmt.format(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return fmt.format(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
             // Gráfica comparativa completa
             new Chart(document.getElementById('modalCompChart'), {
                 type: 'bar',
                 data: {
-                    labels: ['Materiales', 'Mano de Obra', 'Total'],
+                    labels: ['Materiales', 'Mano de Obra', 'Diseño', 'Total'],
                     datasets: [
                         {
                             label: 'Presupuestado',
-                            data: [p.matBudget || 0, p.manBudget || 0, costBudget],
+                            data: [p.matBudget || 0, p.manBudget || 0, p.disBudget || 0, costBudget],
                             backgroundColor: '#1976D2'
                         },
                         {
                             label: 'Real',
-                            data: [p.matReal || 0, p.manReal || 0, costReal],
+                            data: [p.matReal || 0, p.manReal || 0, p.disReal || 0, costReal],
                             backgroundColor: '#D32F2F'
                         }
                     ]
@@ -946,18 +1048,19 @@
         const mIdx = parseInt(document.getElementById('selMonth').value);
         const curr = dataStore[mIdx] || [];
         
-        let mIng = 0, mCost = 0, mMatB = 0, mMatR = 0, mManB = 0, mManR = 0;
+        let mIng = 0, mCost = 0, mMatB = 0, mMatR = 0, mManB = 0, mManR = 0, mDisB = 0, mDisR = 0;
         const tb = document.getElementById('monthTableBody');
         tb.innerHTML = "";
         
         const marginLabels = [], marginReal = [], marginTarget = [];
         const matLabels = [], matBudget = [], matReal = [];
         const manLabels = [], manBudget = [], manReal = [];
+        const disLabels = [], disBudget = [], disReal = [];
         const budgetTb = document.getElementById('budgetTable');
         budgetTb.innerHTML = "";
         
         curr.forEach((p, i) => {
-            const c = (p.matReal || 0) + (p.manReal || 0);
+            const c = (p.matReal || 0) + (p.manReal || 0) + (p.disReal || 0);
             const u = p.ing - c;
             const m = p.ing > 0 ? ((u / p.ing) * 100) : 0;
             const t = p.targetMarginPct || 0;
@@ -968,6 +1071,8 @@
             mMatR += (p.matReal || 0);
             mManB += (p.manBudget || 0);
             mManR += (p.manReal || 0);
+            mDisB += (p.disBudget || 0);
+            mDisR += (p.disReal || 0);
             
             marginLabels.push(p.name);
             marginReal.push(m);
@@ -981,8 +1086,13 @@
             manBudget.push(p.manBudget || 0);
             manReal.push(p.manReal || 0);
             
+            disLabels.push(p.name);
+            disBudget.push(p.disBudget || 0);
+            disReal.push(p.disReal || 0);
+            
             const matD = (p.matReal || 0) - (p.matBudget || 0);
             const manD = (p.manReal || 0) - (p.manBudget || 0);
+            const disD = (p.disReal || 0) - (p.disBudget || 0);
             
             tb.innerHTML += `<tr>
                 <td><strong>${p.name}</strong></td>
@@ -1001,6 +1111,9 @@
                 <td>${fmt.format(p.manBudget || 0)}</td>
                 <td>${fmt.format(p.manReal || 0)}</td>
                 <td style="color:${manD <= 0 ? 'var(--green)' : 'var(--accent-red)'}">${manD >= 0 ? '+' : ''}${fmt.format(manD)}</td>
+                <td>${fmt.format(p.disBudget || 0)}</td>
+                <td>${fmt.format(p.disReal || 0)}</td>
+                <td style="color:${disD <= 0 ? 'var(--green)' : 'var(--accent-red)'}">${disD >= 0 ? '+' : ''}${fmt.format(disD)}</td>
             </tr>`;
         });
 
@@ -1016,14 +1129,19 @@
         document.getElementById('total-mat-real').innerText = fmt.format(mMatR);
         document.getElementById('total-man-budget').innerText = fmt.format(mManB);
         document.getElementById('total-man-real').innerText = fmt.format(mManR);
+        document.getElementById('total-dis-budget').innerText = fmt.format(mDisB);
+        document.getElementById('total-dis-real').innerText = fmt.format(mDisR);
         
         const matVar = mMatB > 0 ? (((mMatR - mMatB) / mMatB) * 100) : 0;
         const manVar = mManB > 0 ? (((mManR - mManB) / mManB) * 100) : 0;
+        const disVar = mDisB > 0 ? (((mDisR - mDisB) / mDisB) * 100) : 0;
         
         document.getElementById('mat-variance').innerHTML = `${matVar >= 0 ? '↑' : '↓'} ${Math.abs(matVar).toFixed(1)}%`;
         document.getElementById('mat-variance').className = matVar <= 0 ? 'trend up' : 'trend down';
         document.getElementById('man-variance').innerHTML = `${manVar >= 0 ? '↑' : '↓'} ${Math.abs(manVar).toFixed(1)}%`;
         document.getElementById('man-variance').className = manVar <= 0 ? 'trend up' : 'trend down';
+        document.getElementById('dis-variance').innerHTML = `${disVar >= 0 ? '↑' : '↓'} ${Math.abs(disVar).toFixed(1)}%`;
+        document.getElementById('dis-variance').className = disVar <= 0 ? 'trend up' : 'trend down';
         
         // Datos anuales
         let yIng = 0, yCos = 0, totalMarginReal = 0, totalMarginTarget = 0, projectCount = 0, comply = 0;
@@ -1036,7 +1154,7 @@
             let mi = 0, mc = 0, monthMarginR = [], monthMarginT = [];
             
             ps.forEach(p => {
-                const pc = (p.matReal || 0) + (p.manReal || 0);
+                const pc = (p.matReal || 0) + (p.manReal || 0) + (p.disReal || 0);
                 const pu = p.ing - pc;
                 const pm = p.ing > 0 ? ((pu / p.ing) * 100) : 0;
                 const pt = p.targetMarginPct || 0;
@@ -1107,6 +1225,11 @@
         charts.manBudget.data.datasets[1].data = manReal;
         charts.manBudget.update();
         
+        charts.disBudget.data.labels = disLabels;
+        charts.disBudget.data.datasets[0].data = disBudget;
+        charts.disBudget.data.datasets[1].data = disReal;
+        charts.disBudget.update();
+        
         charts.trend.data.datasets[0].data = dataIngs;
         charts.trend.data.datasets[1].data = dataCosts;
         charts.trend.update();
@@ -1116,13 +1239,13 @@
     }
 
     function exportToExcel() {
-        let rows = [["Mes", "Proyecto", "Ingreso", "Mat.Pres", "Mat.Real", "MO Pres", "MO Real", "Costo Total", "Utilidad", "Margen%", "Margen Obj%"]];
+        let rows = [["Mes", "Proyecto", "Ingreso", "Mat.Pres", "Mat.Real", "MO Pres", "MO Real", "Dis.Pres", "Dis.Real", "Costo Total", "Utilidad", "Margen%", "Margen Obj%"]];
         meses.forEach((m, i) => {
             (dataStore[i] || []).forEach(p => {
-                const c = (p.matReal || 0) + (p.manReal || 0);
+                const c = (p.matReal || 0) + (p.manReal || 0) + (p.disReal || 0);
                 const u = p.ing - c;
                 const mg = p.ing > 0 ? ((u / p.ing) * 100) : 0;
-                rows.push([m, p.name, p.ing, p.matBudget||0, p.matReal||0, p.manBudget||0, p.manReal||0, c, u, mg.toFixed(2), p.targetMarginPct||0]);
+                rows.push([m, p.name, p.ing, p.matBudget||0, p.matReal||0, p.manBudget||0, p.manReal||0, p.disBudget||0, p.disReal||0, c, u, mg.toFixed(2), p.targetMarginPct||0]);
             });
         });
         
